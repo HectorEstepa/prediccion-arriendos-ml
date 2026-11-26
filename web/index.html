@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Comparación de modelos de aprendizaje automático para estimar arriendos en la Región Metropolitana.">
+  <title>Predicción de arriendos | Estudio comparativo</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/vendor/plotly-4.1.1.min.js" defer></script>
+  <script src="/static/charts.js" defer></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <div class="header-shell"><header class="site-header">
+    <a class="brand" href="/">Estudio de arriendos</a>
+    <nav aria-label="Secciones del proyecto"><a href="#resultados">Resultados</a><a href="#comunas">Comunas</a><a href="#analisis-modelos">Predicciones</a><a href="#interpretacion">Modelos</a><a href="#knn-analysis">KNN</a><a href="#metodologia">Metodología</a></nav>
+  </header></div>
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <p class="kicker">Aprendizaje automático · Región Metropolitana</p>
+      <h1 id="page-title">Predicción del precio de arriendo</h1>
+      <p class="lead">Comparación de cuatro modelos a partir de la superficie, los gastos comunes, la comuna y el número de habitaciones y baños.</p>
+      <p class="byline">Proyecto universitario <span aria-hidden="true">/</span> Precios mensuales en pesos chilenos</p>
+    </section>
+    <div id="load-status" role="status" class="notice">Cargando los resultados del entrenamiento…</div>
+
+    <section id="resultados" class="results" aria-labelledby="evaluation-title">
+      <div class="section-heading"><h2 id="evaluation-title">Comparación de modelos</h2><p>Evaluación en datos de prueba</p></div>
+      <div class="study-summary">
+        <p>Anuncios válidos<strong id="stat-rows">—</strong></p>
+        <p>Anuncios de prueba<strong id="stat-test">—</strong></p>
+        <p>Selección por validación<strong id="stat-model">—</strong></p>
+      </div>
+      <div class="comparison-grid">
+        <figure class="figure mae-figure" aria-labelledby="mae-title">
+          <h3 id="mae-title">Error promedio por modelo</h3>
+          <p class="chart-description">Error absoluto medio (MAE), en CLP. Un valor menor indica menos error.</p>
+          <div id="mae-chart" class="bar-chart"></div>
+          <button id="download-metrics" class="download" type="button" disabled>Descargar datos (.csv)</button>
+          <figcaption>Fuente: evaluación del proyecto sobre el conjunto de prueba.</figcaption>
+        </figure>
+        <div class="metric-table">
+          <div class="table-wrap" tabindex="0" role="region" aria-label="Métricas de los modelos, desplazable horizontalmente">
+            <table><caption>Resultados completos</caption><thead><tr><th scope="col">Modelo</th><th scope="col">MAE (CLP)</th><th scope="col">RMSE (CLP)</th><th scope="col">R²</th></tr></thead><tbody id="metrics-body"></tbody></table>
+          </div>
+          <p class="table-note">La selección se hace por MAE de validación, antes de evaluar en prueba. R² mide la variabilidad explicada y puede tomar valores negativos.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="comunas" class="communes-section" aria-labelledby="communes-title">
+      <div class="section-heading"><h2 id="communes-title">Comparación de comunas</h2><p>Precios observados y estimaciones para una misma propiedad</p></div>
+      <p class="section-description">Los precios observados dependen de las propiedades disponibles en cada comuna. Para comparar los modelos, utiliza las mismas características y cambia solamente la comuna.</p>
+      <div class="plot-grid">
+        <figure class="figure"><h3>Las 10 comunas con mayor mediana de arriendo</h3><div id="communes-high" class="plot"></div><figcaption>Mediana del CSV filtrado. La cantidad de anuncios varía por comuna.</figcaption></figure>
+        <figure class="figure"><h3>Las 10 comunas con menor mediana de arriendo</h3><div id="communes-low" class="plot"></div><figcaption>Precios observados, sin ajustar por superficie o características.</figcaption></figure>
+      </div>
+      <form id="compare-form" class="compare-form">
+        <fieldset id="compare-fields" disabled><legend>Comparar una misma propiedad en tres comunas</legend>
+          <div class="compare-selects"><div><label for="compare-comuna-1">Primera comuna</label><select id="compare-comuna-1" required></select></div><div><label for="compare-comuna-2">Segunda comuna</label><select id="compare-comuna-2" required></select></div><div><label for="compare-comuna-3">Tercera comuna</label><select id="compare-comuna-3" required></select></div></div>
+          <div class="compare-values"><div><label for="compare-metros">Superficie (m²)</label><input id="compare-metros" type="number" min="15" max="200" step="0.1" value="50" required></div><div><label for="compare-gastos">Gastos comunes (CLP)</label><input id="compare-gastos" type="number" min="0" max="10000000" value="80000" required></div><div><label for="compare-habitaciones">Habitaciones</label><input id="compare-habitaciones" type="number" min="0" max="20" value="2" required></div><div><label for="compare-banos">Baños</label><input id="compare-banos" type="number" min="1" max="20" value="1" required></div></div>
+          <button id="compare-button" type="submit">Comparar comunas y modelos</button>
+        </fieldset>
+      </form>
+      <p id="compare-status" class="section-description" role="status" aria-live="polite"></p>
+      <div class="plot-grid">
+        <figure class="figure"><h3>Distribución de los precios observados</h3><div id="communes-box" class="plot"></div><figcaption>Caja: percentiles 25–75; línea: mediana. Los puntos aislados representan valores extremos.</figcaption></figure>
+        <figure class="figure"><h3>Precio estimado por comuna y modelo</h3><div id="communes-models" class="plot"></div><figcaption>Todos los modelos reciben la misma superficie, gastos, habitaciones y baños. No es una comparación causal.</figcaption></figure>
+      </div>
+    </section>
+
+    <div id="analisis-modelos" class="analysis-grid">
+      <section class="prediction-analysis" aria-labelledby="scatter-title">
+        <div class="section-heading"><h2 id="scatter-title">Predicciones y valores reales</h2></div>
+        <div class="chart-controls"><label for="chart-select">Modelo del gráfico</label><select id="chart-select" disabled></select></div>
+        <figure class="figure scatter-figure" aria-labelledby="scatter-subtitle">
+          <h3 id="scatter-subtitle">Precio real frente a precio estimado</h3>
+          <p class="chart-description">Cada punto es un anuncio de prueba. Cuanto más cerca de la diagonal, menor es el error de la predicción.</p>
+          <div class="chart-key"><span><i class="key-dot" aria-hidden="true"></i><span id="chart-model">Modelo</span></span><span><i class="key-line" aria-hidden="true"></i>Predicción exacta</span></div>
+          <div id="scatter" class="scatter"></div>
+          <button id="download-predictions" class="download" type="button" disabled>Descargar datos (.csv)</button>
+          <figcaption id="chart-summary"></figcaption>
+        </figure>
+        <figure class="figure secondary-figure"><h3>Residuos de la predicción</h3><p class="chart-description">Residuo = precio real − estimado. Un valor positivo indica que el modelo subestimó el arriendo.</p><div id="residuals" class="plot"></div><figcaption>Los mismos anuncios de prueba del modelo seleccionado arriba.</figcaption></figure>
+      </section>
+      <section id="estimador" class="estimator" aria-labelledby="estimate-title">
+        <div class="section-heading"><h2 id="estimate-title">Estimar un arriendo</h2></div>
+        <p class="section-description">Ingresa las características de una propiedad para consultar el modelo entrenado.</p>
+        <form id="prediction-form">
+          <fieldset id="property-fields" disabled>
+            <legend class="sr-only">Características de la propiedad</legend>
+            <label for="comuna">Comuna</label><select id="comuna" name="comuna" required></select>
+            <div class="fields">
+              <div><label for="metros">Superficie <span>(m²)</span></label><input id="metros" name="metros" type="number" min="15" max="200" step="0.1" value="50" required></div>
+              <div><label for="gastos_comunes">Gastos comunes <span>(CLP)</span></label><input id="gastos_comunes" name="gastos_comunes" type="number" min="0" max="10000000" step="1" value="80000" required></div>
+              <div><label for="habitaciones">Habitaciones</label><input id="habitaciones" name="habitaciones" type="number" min="0" max="20" step="1" value="2" required></div>
+              <div><label for="banos">Baños</label><input id="banos" name="banos" type="number" min="1" max="20" step="1" value="1" required></div>
+            </div>
+            <label for="modelo">Modelo</label><select id="modelo" name="modelo" required></select>
+            <button id="predict-button" type="submit">Calcular estimación</button>
+          </fieldset>
+        </form>
+        <div id="prediction" class="result" role="status" aria-live="polite">
+          <p class="result-label">Arriendo mensual estimado</p><p class="price" id="price">—</p>
+          <p id="prediction-detail">Completa el formulario para calcular el precio.</p><p id="classification"></p><ul id="warnings"></ul>
+        </div>
+        <p class="fine-print">El precio no incluye los gastos comunes. El MAE es un error promedio en prueba, no un intervalo de confianza ni una tasación.</p>
+        <div class="model-description"><h3>Sobre el modelo del gráfico</h3><p id="model-description"></p><p id="model-metrics"></p></div>
+      </section>
+    </div>
+
+    <section id="interpretacion" class="model-explanations" aria-labelledby="explanations-title">
+      <div class="section-heading"><h2 id="explanations-title">Interpretación de los modelos</h2><p>Coeficientes, importancias y configuración</p></div>
+      <nav class="model-jumps" aria-label="Análisis por algoritmo"><a href="#linear-analysis">Regresión lineal</a><a href="#forest-analysis">Random Forest</a><a href="#neural-analysis">Red neuronal</a><a href="#knn-analysis">KNN</a></nav>
+      <figure class="figure secondary-figure"><h3>Importancia por permutación</h3><p class="chart-description">Cambio del MAE al desordenar una característica en prueba, sin reentrenar. Un valor mayor indica mayor dependencia del modelo. Puede ser negativo. Corresponde al modelo del selector anterior.</p><div id="permutation" class="plot"></div><figcaption>Cinco permutaciones por variable; barras de error: una desviación estándar. Diagnóstico posterior a la selección del modelo.</figcaption></figure>
+      <h3 id="linear-analysis" class="subsection-title">Regresión lineal</h3>
+      <p id="linear-reference" class="section-description"></p>
+      <div class="plot-grid">
+        <figure class="figure"><h3>Coeficientes de las variables numéricas</h3><div id="linear-numeric" class="plot"></div><figcaption>Pesos de arriendo por una unidad adicional, manteniendo las demás variables constantes. Sus unidades difieren; el tamaño del coeficiente no equivale a importancia.</figcaption></figure>
+        <figure class="figure"><h3>Efecto de la comuna respecto de la referencia</h3><div id="linear-communes" class="plot tall-plot"></div><figcaption>Coeficientes ajustados; la comuna de referencia tiene efecto 0. No deben interpretarse como efectos causales.</figcaption></figure>
+      </div>
+      <h3 id="forest-analysis" class="subsection-title">Random Forest</h3>
+      <p id="forest-description" class="section-description"></p>
+      <div class="plot-grid">
+        <figure class="figure"><h3>Importancia de las variables numéricas</h3><div id="forest-numeric" class="plot"></div><figcaption>Reducción de impureza del bosque. Las importancias numéricas más las columnas de comuna suman 100%.</figcaption></figure>
+        <figure class="figure"><h3>Las 10 columnas de comuna con mayor importancia</h3><div id="forest-communes" class="plot"></div><figcaption>La importancia expresa uso en los árboles, no si la comuna encarece o abarata el arriendo.</figcaption></figure>
+      </div>
+      <h3 id="neural-analysis" class="subsection-title">Red neuronal</h3>
+      <div class="plot-grid">
+        <figure class="figure"><h3>Arquitectura entrenada</h3><div id="neural-architecture" class="plot"></div><figcaption>Cada nodo representa una capa y muestra su número de unidades. Incluye las columnas de comuna codificadas.</figcaption></figure>
+        <figure class="figure"><h3>Curva de entrenamiento</h3><div id="neural-loss" class="plot"></div><figcaption>Pérdida sobre el objetivo estandarizado. No está expresada en CLP ni corresponde al error de prueba.</figcaption></figure>
+      </div>
+    </section>
+
+    <section id="knn-analysis" class="knn-section" aria-labelledby="knn-title">
+      <div class="section-heading"><h2 id="knn-title">Clasificación y vecinos de KNN</h2><p>Experimento independiente de la regresión</p></div>
+      <p id="knn-description" class="section-description"></p>
+      <div id="knn-scores" class="study-summary"></div>
+      <div class="plot-grid">
+        <figure class="figure"><h3>Matriz de confusión</h3><div id="knn-confusion" class="plot"></div><figcaption>Filas: clase real; columnas: clase predicha. Solo datos de prueba.</figcaption></figure>
+        <figure class="figure"><h3>Curva ROC</h3><div id="knn-roc" class="plot"></div><figcaption>Calculada a partir de las probabilidades del clasificador en prueba.</figcaption></figure>
+        <figure class="figure"><h3>Proyección de los datos y vecinos cercanos</h3><div id="knn-neighbors" class="plot"></div><figcaption>Se muestran superficie y gastos comunes. La distancia se calcula con todas las características transformadas. Calcula un arriendo en el estimador para ver la propiedad y sus cinco vecinos reales.</figcaption></figure>
+        <figure class="figure"><h3>Rendimiento según el número de vecinos</h3><div id="knn-k" class="plot"></div><figcaption>Diagnóstico en validación, con umbral calculado solo en entrenamiento. El proyecto mantiene K=5; esta curva no usa prueba para elegir K.</figcaption></figure>
+      </div>
+      <div class="model-description"><h3>Cómo interpretar KNN</h3><p>Los cinco vecinos se buscan después de escalar las variables numéricas y codificar la comuna. La regresión calcula un promedio de precios ponderado por la distancia; el clasificador vota entre dos clases. Una proyección en dos dimensiones no muestra toda la distancia usada por el algoritmo.</p></div>
+    </section>
+    <section id="metodologia" class="method" aria-labelledby="method-title">
+      <div class="section-heading"><h2 id="method-title">Datos y metodología</h2><p>Alcance y limitaciones del estudio</p></div>
+      <div class="method-columns">
+        <div><h3>Preparación y evaluación</h3><p>Se eliminan duplicados y registros fuera del alcance definido. Los anuncios de la misma comuna y dirección normalizadas se mantienen en un solo grupo al separar entrenamiento, validación y prueba.</p><p id="split-summary"></p></div>
+        <div><h3>Procedencia de los datos</h3><p>Se utiliza una copia del CSV original sin títulos ni direcciones. No se conserva el código del scraping ni la fuente o fecha exactas. El análisis incluye precios entre $100.000 y $2.000.000 y superficies de 15 a 200 m².</p></div>
+        <div><h3>Interpretación</h3><p>Los resultados describen una muestra histórica de arriendos. No prueban causalidad ni permiten estimar precios de compraventa. Las propiedades poco representadas pueden tener errores mayores.</p></div>
+      </div>
+    </section>
+  </main>
+  <footer><span>Estudio de arriendos · Proyecto universitario</span><a href="/docs">Documentación de la API</a></footer>
+</body>
+</html>

@@ -1,0 +1,4 @@
+-r ../requirements.txt
+matplotlib>=3.9,<4
+polars>=1,<2
+networkx>=3,<4

@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Predicción de Precios</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/regression@2.0.1/dist/regression.min.js"></script>
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #2c3e50;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --light: #ecf0f1;
+            --dark: #34495e;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 30px 0;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .metric-r2 {
+            color: var(--success);
+        }
+        
+        .metric-mae {
+            color: var(--warning);
+        }
+        
+        .metric-price {
+            color: var(--primary);
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: #777;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .tab:hover:not(.active) {
+            background: #f1f1f1;
+        }
+        
+        .tab-content {
+            display: none;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+        
+        .prediction-form {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .prediction-result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f4fc;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .feature-importance {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .feature-name {
+            width: 150px;
+            font-weight: 500;
+        }
+        
+        .feature-bar {
+            flex: 1;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .feature-value {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .feature-percentage {
+            width: 60px;
+            text-align: right;
+            font-weight: 500;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #777;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Dashboard de Predicción de Precios</h1>
+            <p class="subtitle">Modelo Random Forest para estimación de precios de propiedades</p>
+        </header>
+        
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Coeficiente de Determinación</div>
+                <div class="metric-value metric-r2">0.893</div>
+                <div class="metric-description">El modelo explica el 89.3% de la varianza</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Error Absoluto Medio</div>
+                <div class="metric-value metric-mae">$55,791</div>
+                <div class="metric-description">Error promedio en la predicción</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Precio Promedio</div>
+                <div class="metric-value metric-price">$469,281</div>
+                <div class="metric-description">Valor promedio de las propiedades</div>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="prediction">Predicción</div>
+            <div class="tab" data-tab="performance">Rendimiento</div>
+            <div class="tab" data-tab="importance">Importancia de Variables</div>
+            <div class="tab" data-tab="comunas">Impacto por Comuna</div>
+        </div>
+        
+        <div class="tab-content active" id="prediction-tab">
+            <h2>Predicción de Precio</h2>
+            <p>Complete los datos de la propiedad para obtener una estimación de precio:</p>
+            
+            <div class="prediction-form">
+                <div class="form-group">
+                    <label for="metros">Metros cuadrados (m²)</label>
+                    <input type="number" id="metros" min="0" step="1" value="100">
+                </div>
+                
+                <div class="form-group">
+                    <label for="gastos">Gastos Comunes ($)</label>
+                    <input type="number" id="gastos" min="0" step="1" value="50000">
+                </div>
+                
+                <div class="form-group">
+                    <label for="habitaciones">Número de Habitaciones</label>
+                    <input type="number" id="habitaciones" min="1" step="1" value="3">
+                </div>
+                
+                <div class="form-group">
+                    <label for="banos">Número de Baños</label>
+                    <input type="number" id="banos" min="1" step="1" value="2">
+                </div>
+                
+                <div class="form-group">
+                    <label for="comuna">Comuna</label>
+                    <select id="comuna">
+                        <!-- Las opciones se llenarán con JavaScript -->
+                    </select>
+                </div>
+                
+                <button id="predict-btn">Predecir Precio</button>
+                
+                <div class="prediction-result" id="prediction-result">
+                    El precio estimado aparecerá aquí
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="performance-tab">
+            <h2>Rendimiento del Modelo</h2>
+            <p>Comparación entre valores reales y predichos:</p>
+            
+            <div class="chart-container">
+                <canvas id="performance-chart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="residuals-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="importance-tab">
+            <h2>Importancia de Variables</h2>
+            <p>Variables numéricas más importantes en el modelo:</p>
+            
+            <div id="numeric-importance">
+                <!-- Se llenará con JavaScript -->
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="importance-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="comunas-tab">
+            <h2>Impacto por Comuna</h2>
+            <p>Comunas con mayor impacto en el precio:</p>
+            
+            <div id="comunas-importance">
+                <!-- Se llenará con JavaScript -->
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="comunas-chart"></canvas>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Modelo Random Forest - Dashboard de Predicción de Precios</p>
+            <p>Desarrollado para análisis de propiedades inmobiliarias</p>
+        </footer>
+    </div>
+
+    <script>
+        // Datos del modelo
+        const modelData = {
+            tipo_modelo: "RandomForestRegressor",
+            parametros: {
+                n_estimators: 100,
+                max_depth: "None",
+                min_samples_split: 2,
+                min_samples_leaf: 1
+            },
+            metricas: {
+                precio_promedio: 469280.9359408685,
+                r2: 0.8926438550922035,
+                mae: 55791.29622764814
+            },
+            importancias_comunas: [
+                { Variable: "Vitacura", Importancia: 0.05027372055572204 },
+                { Variable: "Las Condes", Importancia: 0.02702492038043159 },
+                { Variable: "Providencia", Importancia: 0.014452755705097426 },
+                { Variable: "Lo Barnechea", Importancia: 0.01352034763303986 },
+                { Variable: "Ñuñoa", Importancia: 0.012277546308578611 },
+                { Variable: "Macul", Importancia: 0.009650086369082421 },
+                { Variable: "Santiago", Importancia: 0.007898234813891479 },
+                { Variable: "Peñalolén", Importancia: 0.003979564749855481 },
+                { Variable: "Estación Central", Importancia: 0.0020509280646791683 },
+                { Variable: "La Reina", Importancia: 0.0017468637086610183 },
+                { Variable: "Huechuraba", Importancia: 0.0011340326572604443 },
+                { Variable: "Maipú", Importancia: 0.0010946207008619272 },
+                { Variable: "Cerrillos", Importancia: 0.0009167274429084545 },
+                { Variable: "La Florida", Importancia: 0.0009146618778379641 },
+                { Variable: "San Miguel", Importancia: 0.0009127852704314599 },
+                { Variable: "Recoleta", Importancia: 0.000679139507448682 },
+                { Variable: "Pudahuel", Importancia: 0.0005939329897218336 },
+                { Variable: "Independencia", Importancia: 0.00047466875329922663 },
+                { Variable: "La Cisterna", Importancia: 0.00036092335313866287 },
+                { Variable: "Quinta Normal", Importancia: 0.00017991917946579065 },
+                { Variable: "San Joaquín", Importancia: 0.00012907894494297337 },
+                { Variable: "Colina", Importancia: 0.00011595289843345753 },
+                { Variable: "Renca", Importancia: 8.8071498385087e-05 },
+                { Variable: "San Bernardo", Importancia: 6.655848058009866e-05 },
+                { Variable: "Puente Alto", Importancia: 3.311681340356824e-05 },
+                { Variable: "Quilicura", Importancia: 3.1642323259418e-05 },
+                { Variable: "Conchalí", Importancia: 2.2116286195574377e-05 },
+                { Variable: "Lo Prado", Importancia: 1.7384833262146367e-05 },
+                { Variable: "El Bosque", Importancia: 1.0300763222420403e-05 },
+                { Variable: "Lampa", Importancia: 8.767863116078068e-06 },
+                { Variable: "San Ramón", Importancia: 8.428913707219446e-06 },
+                { Variable: "Talagante", Importancia: 6.900558310119996e-06 },
+                { Variable: "Padre Hurtado", Importancia: 5.754661547375786e-06 },
+                { Variable: "La Granja", Importancia: 5.515404666572315e-06 }
+            ],
+            importancias_numericas: [
+                { Variable: "Metros (m²)", Importancia: 0.4443487568639607 },
+                { Variable: "Gastos_Comunes ($)", Importancia: 0.2824670580419629 },
+                { Variable: "Baños", Importancia: 0.06534592860809939 },
+                { Variable: "Habitaciones", Importancia: 0.05715228622153114 }
+            ],
+            comunas_disponibles: [
+                "Cerrillos", "Colina", "Conchalí", "El Bosque", "Estación Central", "Huechuraba", 
+                "Independencia", "La Cisterna", "La Florida", "La Granja", "La Reina", "Lampa", 
+                "Las Condes", "Lo Barnechea", "Lo Prado", "Macul", "Maipú", "Padre Hurtado", 
+                "Peñalolén", "Providencia", "Pudahuel", "Puente Alto", "Quilicura", "Quinta Normal", 
+                "Recoleta", "Renca", "San Bernardo", "San Joaquín", "San Miguel", "San Ramón", 
+                "Santiago", "Talagante", "Vitacura", "Ñuñoa"
+            ]
+        };
+
+        // Inicialización cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configurar tabs
+            setupTabs();
+            
+            // Llenar select de comunas
+            populateComunasSelect();
+            
+            // Mostrar importancia de variables numéricas
+            displayNumericImportance();
+            
+            // Mostrar importancia de comunas
+            displayComunasImportance();
+            
+            // Configurar gráficos
+            setupCharts();
+            
+            // Configurar botón de predicción
+            document.getElementById('predict-btn').addEventListener('click', predictPrice);
+        });
+
+        // Configuración de pestañas
+        function setupTabs() {
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remover clase activa de todas las pestañas y contenidos
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Agregar clase activa a la pestaña clickeada
+                    tab.classList.add('active');
+                    
+                    // Mostrar el contenido correspondiente
+                    const tabId = tab.getAttribute('data-tab');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                });
+            });
+        }
+
+        // Llenar select de comunas
+        function populateComunasSelect() {
+            const comunaSelect = document.getElementById('comuna');
+            modelData.comunas_disponibles.forEach(comuna => {
+                const option = document.createElement('option');
+                option.value = comuna;
+                option.textContent = comuna;
+                comunaSelect.appendChild(option);
+            });
+        }
+
+        // Mostrar importancia de variables numéricas
+        function displayNumericImportance() {
+            const container = document.getElementById('numeric-importance');
+            container.innerHTML = '';
+            
+            modelData.importancias_numericas.forEach(item => {
+                const percentage = (item.Importancia * 100).toFixed(2);
+                
+                const featureDiv = document.createElement('div');
+                featureDiv.className = 'feature-importance';
+                
+                featureDiv.innerHTML = `
+                    <div class="feature-name">${item.Variable}</div>
+                    <div class="feature-bar">
+                        <div class="feature-value" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="feature-percentage">${percentage}%</div>
+                `;
+                
+                container.appendChild(featureDiv);
+            });
+        }
+
+        // Mostrar importancia de comunas (top 10)
+        function displayComunasImportance() {
+            const container = document.getElementById('comunas-importance');
+            container.innerHTML = '';
+            
+            // Tomar solo las 10 comunas más importantes
+            const topComunas = modelData.importancias_comunas.slice(0, 10);
+            
+            topComunas.forEach(item => {
+                const percentage = (item.Importancia * 100).toFixed(2);
+                
+                const featureDiv = document.createElement('div');
+                featureDiv.className = 'feature-importance';
+                
+                featureDiv.innerHTML = `
+                    <div class="feature-name">${item.Variable}</div>
+                    <div class="feature-bar">
+                        <div class="feature-value" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="feature-percentage">${percentage}%</div>
+                `;
+                
+                container.appendChild(featureDiv);
+            });
+        }
+
+        // Configurar gráficos
+        function setupCharts() {
+            // Gráfico de rendimiento (valores reales vs predichos)
+            const performanceCtx = document.getElementById('performance-chart').getContext('2d');
+            
+            // Datos de ejemplo para el gráfico de rendimiento
+            const realPrices = Array.from({length: 50}, () => Math.random() * 800000 + 100000);
+            const predictedPrices = realPrices.map(price => {
+                // Simular predicciones con cierto error
+                const error = (Math.random() - 0.5) * 100000;
+                return Math.max(price + error, 50000);
+            });
+            
+            // Calcular línea de regresión
+            const regressionData = realPrices.map((price, i) => [price, predictedPrices[i]]);
+            const result = regression.linear(regressionData);
+            
+            const regressionLine = realPrices.map(price => {
+                return result.predict(price)[1];
+            });
+            
+            new Chart(performanceCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Valores Reales vs Predichos',
+                            data: realPrices.map((price, i) => ({x: price, y: predictedPrices[i]})),
+                            backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                            pointRadius: 5
+                        },
+                        {
+                            label: 'Línea de Regresión',
+                            data: realPrices.map((price, i) => ({x: price, y: regressionLine[i]})),
+                            type: 'line',
+                            borderColor: 'rgba(231, 76, 60, 0.8)',
+                            borderWidth: 2,
+                            fill: false,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Valores Reales ($)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + (value / 1000).toFixed(0) + 'k';
+                                }
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Valores Predichos ($)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + (value / 1000).toFixed(0) + 'k';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Real: $${Math.round(context.parsed.x).toLocaleString()}, Predicho: $${Math.round(context.parsed.y).toLocaleString()}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Gráfico de residuos
+            const residualsCtx = document.getElementById('residuals-chart').getContext('2d');
+            
+            const residuals = realPrices.map((price, i) => predictedPrices[i] - price);
+            
+            new Chart(residualsCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Residuos',
+                        data: realPrices.map((price, i) => ({x: price, y: residuals[i]})),
+                        backgroundColor: 'rgba(243, 156, 18, 0.7)',
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Valores Reales ($)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + (value / 1000).toFixed(0) + 'k';
+                                }
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Residuos (Predicho - Real)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + (value / 1000).toFixed(0) + 'k';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Real: $${Math.round(context.parsed.x).toLocaleString()}, Residuo: $${Math.round(context.parsed.y).toLocaleString()}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Gráfico de importancia de variables
+            const importanceCtx = document.getElementById('importance-chart').getContext('2d');
+            
+            const numericLabels = modelData.importancias_numericas.map(item => item.Variable);
+            const numericValues = modelData.importancias_numericas.map(item => item.Importancia * 100);
+            
+            new Chart(importanceCtx, {
+                type: 'bar',
+                data: {
+                    labels: numericLabels,
+                    datasets: [{
+                        label: 'Importancia (%)',
+                        data: numericValues,
+                        backgroundColor: [
+                            'rgba(52, 152, 219, 0.7)',
+                            'rgba(46, 204, 113, 0.7)',
+                            'rgba(155, 89, 182, 0.7)',
+                            'rgba(241, 196, 15, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(52, 152, 219, 1)',
+                            'rgba(46, 204, 113, 1)',
+                            'rgba(155, 89, 182, 1)',
+                            'rgba(241, 196, 15, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Importancia (%)'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Gráfico de importancia de comunas (top 10)
+            const comunasCtx = document.getElementById('comunas-chart').getContext('2d');
+            
+            const topComunas = modelData.importancias_comunas.slice(0, 10);
+            const comunaLabels = topComunas.map(item => item.Variable);
+            const comunaValues = topComunas.map(item => item.Importancia * 100);
+            
+            new Chart(comunasCtx, {
+                type: 'bar',
+                data: {
+                    labels: comunaLabels,
+                    datasets: [{
+                        label: 'Importancia (%)',
+                        data: comunaValues,
+                        backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Importancia (%)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Función para predecir precio
+        function predictPrice() {
+            // Obtener valores del formulario
+            const metros = parseFloat(document.getElementById('metros').value);
+            const gastos = parseFloat(document.getElementById('gastos').value);
+            const habitaciones = parseInt(document.getElementById('habitaciones').value);
+            const banos = parseInt(document.getElementById('banos').value);
+            const comuna = document.getElementById('comuna').value;
+            
+            // Validar entradas
+            if (isNaN(metros) || isNaN(gastos) || isNaN(habitaciones) || isNaN(banos) || !comuna) {
+                alert('Por favor, complete todos los campos correctamente.');
+                return;
+            }
+            
+            // Simular predicción (en un caso real, esto haría una llamada a la API del modelo)
+            // Basado en las importancias de las variables y el precio promedio
+            
+            // Calcular precio base basado en metros cuadrados
+            const precioBase = metros * 3000; // Supuesto: $3,000 por m²
+            
+            // Ajustar por gastos comunes (relación aproximada)
+            const ajusteGastos = gastos * 10;
+            
+            // Ajustar por habitaciones y baños
+            const ajusteHabitaciones = habitaciones * 50000;
+            const ajusteBanos = banos * 30000;
+            
+            // Obtener factor de comuna
+            const comunaData = modelData.importancias_comunas.find(item => item.Variable === comuna);
+            const factorComuna = comunaData ? comunaData.Importancia * 10000000 : 50000;
+            
+            // Calcular precio estimado
+            let precioEstimado = precioBase + ajusteGastos + ajusteHabitaciones + ajusteBanos + factorComuna;
+            
+            // Aplicar un factor de corrección basado en el precio promedio del modelo
+            const factorCorreccion = modelData.metricas.precio_promedio / 500000; // Aproximación
+            precioEstimado *= factorCorreccion;
+            
+            // Agregar un pequeño error aleatorio para simular variabilidad
+            const error = (Math.random() - 0.5) * modelData.metricas.mae;
+            precioEstimado += error;
+            
+            // Mostrar resultado
+            const resultElement = document.getElementById('prediction-result');
+            resultElement.innerHTML = `
+                <h3>Precio Estimado: $${Math.round(precioEstimado).toLocaleString()}</h3>
+                <p>Basado en los datos proporcionados y el modelo Random Forest entrenado.</p>
+                <p><small>Nota: Esta es una estimación. El precio real puede variar.</small></p>
+            `;
+        }
+    </script>
+</body>
+</html>

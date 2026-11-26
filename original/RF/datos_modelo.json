@@ -1,0 +1,246 @@
+{
+  "tipo_modelo": "RandomForestRegressor",
+  "parametros": {
+    "n_estimators": 100,
+    "max_depth": "None",
+    "min_samples_split": 2,
+    "min_samples_leaf": 1
+  },
+  "metricas": {
+    "precio_promedio": 469280.9359408685,
+    "r2": 0.8926438550922035,
+    "mae": 55791.29622764814
+  },
+  "importancias_comunas": [
+    {
+      "Variable": "Vitacura",
+      "Importancia": 0.05027372055572204
+    },
+    {
+      "Variable": "Las Condes",
+      "Importancia": 0.02702492038043159
+    },
+    {
+      "Variable": "Providencia",
+      "Importancia": 0.014452755705097426
+    },
+    {
+      "Variable": "Lo Barnechea",
+      "Importancia": 0.01352034763303986
+    },
+    {
+      "Variable": "Ñuñoa",
+      "Importancia": 0.012277546308578611
+    },
+    {
+      "Variable": "Macul",
+      "Importancia": 0.009650086369082421
+    },
+    {
+      "Variable": "Santiago",
+      "Importancia": 0.007898234813891479
+    },
+    {
+      "Variable": "Peñalolén",
+      "Importancia": 0.003979564749855481
+    },
+    {
+      "Variable": "Estación Central",
+      "Importancia": 0.0020509280646791683
+    },
+    {
+      "Variable": "La Reina",
+      "Importancia": 0.0017468637086610183
+    },
+    {
+      "Variable": "Huechuraba",
+      "Importancia": 0.0011340326572604443
+    },
+    {
+      "Variable": "Maipú",
+      "Importancia": 0.0010946207008619272
+    },
+    {
+      "Variable": "Cerrillos",
+      "Importancia": 0.0009167274429084545
+    },
+    {
+      "Variable": "La Florida",
+      "Importancia": 0.0009146618778379641
+    },
+    {
+      "Variable": "San Miguel",
+      "Importancia": 0.0009127852704314599
+    },
+    {
+      "Variable": "Recoleta",
+      "Importancia": 0.000679139507448682
+    },
+    {
+      "Variable": "Pudahuel",
+      "Importancia": 0.0005939329897218336
+    },
+    {
+      "Variable": "Independencia",
+      "Importancia": 0.00047466875329922663
+    },
+    {
+      "Variable": "La Cisterna",
+      "Importancia": 0.00036092335313866287
+    },
+    {
+      "Variable": "Quinta Normal",
+      "Importancia": 0.00017991917946579065
+    },
+    {
+      "Variable": "San Joaquín",
+      "Importancia": 0.00012907894494297337
+    },
+    {
+      "Variable": "Colina",
+      "Importancia": 0.00011595289843345753
+    },
+    {
+      "Variable": "Renca",
+      "Importancia": 8.8071498385087e-05
+    },
+    {
+      "Variable": "San Bernardo",
+      "Importancia": 6.655848058009866e-05
+    },
+    {
+      "Variable": "Puente Alto",
+      "Importancia": 3.311681340356824e-05
+    },
+    {
+      "Variable": "Quilicura",
+      "Importancia": 3.1642323259418e-05
+    },
+    {
+      "Variable": "Conchalí",
+      "Importancia": 2.2116286195574377e-05
+    },
+    {
+      "Variable": "Lo Prado",
+      "Importancia": 1.7384833262146367e-05
+    },
+    {
+      "Variable": "El Bosque",
+      "Importancia": 1.0300763222420403e-05
+    },
+    {
+      "Variable": "Lampa",
+      "Importancia": 8.767863116078068e-06
+    },
+    {
+      "Variable": "San Ramón",
+      "Importancia": 8.428913707219446e-06
+    },
+    {
+      "Variable": "Talagante",
+      "Importancia": 6.900558310119996e-06
+    },
+    {
+      "Variable": "Padre Hurtado",
+      "Importancia": 5.754661547375786e-06
+    },
+    {
+      "Variable": "La Granja",
+      "Importancia": 5.515404666572315e-06
+    }
+  ],
+  "importancias_numericas": [
+    {
+      "Variable": "Metros (m²)",
+      "Importancia": 0.4443487568639607
+    },
+    {
+      "Variable": "Gastos_Comunes ($)",
+      "Importancia": 0.2824670580419629
+    },
+    {
+      "Variable": "Baños",
+      "Importancia": 0.06534592860809939
+    },
+    {
+      "Variable": "Habitaciones",
+      "Importancia": 0.05715228622153114
+    }
+  ],
+  "comunas_disponibles": [
+    "Cerrillos",
+    "Colina",
+    "Conchalí",
+    "El Bosque",
+    "Estación Central",
+    "Huechuraba",
+    "Independencia",
+    "La Cisterna",
+    "La Florida",
+    "La Granja",
+    "La Reina",
+    "Lampa",
+    "Las Condes",
+    "Lo Barnechea",
+    "Lo Prado",
+    "Macul",
+    "Maipú",
+    "Padre Hurtado",
+    "Peñalolén",
+    "Providencia",
+    "Pudahuel",
+    "Puente Alto",
+    "Quilicura",
+    "Quinta Normal",
+    "Recoleta",
+    "Renca",
+    "San Bernardo",
+    "San Joaquín",
+    "San Miguel",
+    "San Ramón",
+    "Santiago",
+    "Talagante",
+    "Vitacura",
+    "Ñuñoa"
+  ],
+  "nombres_caracteristicas": [
+    "Metros (m²)",
+    "Gastos_Comunes ($)",
+    "Habitaciones",
+    "Baños",
+    "Comuna_Cerrillos",
+    "Comuna_Colina",
+    "Comuna_Conchalí",
+    "Comuna_El Bosque",
+    "Comuna_Estación Central",
+    "Comuna_Huechuraba",
+    "Comuna_Independencia",
+    "Comuna_La Cisterna",
+    "Comuna_La Florida",
+    "Comuna_La Granja",
+    "Comuna_La Reina",
+    "Comuna_Lampa",
+    "Comuna_Las Condes",
+    "Comuna_Lo Barnechea",
+    "Comuna_Lo Prado",
+    "Comuna_Macul",
+    "Comuna_Maipú",
+    "Comuna_Padre Hurtado",
+    "Comuna_Peñalolén",
+    "Comuna_Providencia",
+    "Comuna_Pudahuel",
+    "Comuna_Puente Alto",
+    "Comuna_Quilicura",
+    "Comuna_Quinta Normal",
+    "Comuna_Recoleta",
+    "Comuna_Renca",
+    "Comuna_San Bernardo",
+    "Comuna_San Joaquín",
+    "Comuna_San Miguel",
+    "Comuna_San Ramón",
+    "Comuna_Santiago",
+    "Comuna_Talagante",
+    "Comuna_Vitacura",
+    "Comuna_Ñuñoa"
+  ]
+}

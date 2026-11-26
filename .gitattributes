@@ -1,0 +1,4 @@
+* text=auto eol=lf
+original/** -text
+data/propiedades.csv -text
+*.png binary
